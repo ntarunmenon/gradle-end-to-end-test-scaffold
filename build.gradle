@@ -8,7 +8,9 @@
  */
 
 repositories {
-    mavenCentral()
+    maven {
+        url "http://10.155.20.176:8081/artifactory/smartamer_repo"
+    }
 }
 // In this section you declare where to find the dependencies of your project
 buildscript {
@@ -17,14 +19,20 @@ buildscript {
     }
     dependencies {
         classpath(
-            'org.unbroken-dome.gradle-plugins:gradle-testsets-plugin:1.2.0'
+            'org.unbroken-dome.gradle-plugins:gradle-testsets-plugin:1.2.0',
+                'io.spring.gradle:dependency-management-plugin:1.0.0.RELEASE',
+                'org.akhikhl.gretty:gretty:+'
         )
     }
 }
 
 // Apply the java plugin to add support for Java
 apply plugin: 'java'
+apply plugin: 'war'
+apply plugin: 'io.spring.dependency-management'
 apply plugin: 'org.unbroken-dome.test-sets'
+apply plugin: 'org.akhikhl.gretty'
+
 
 testSets {
      integrationTest { dirName = 'integration-test' }
@@ -42,29 +50,32 @@ tasks.withType(Test) {
 
 // In this section you declare the dependencies for your production and test code
 dependencies {
-    // The production code uses the SLF4J logging API at compile time
-
-    // Declare the dependency for your favourite test framework you want to use in your tests.
-    // TestNG is also supported by the Gradle Test task. Just change the
-    // testCompile dependency to testCompile 'org.testng:testng:6.8.1' and add
-    // 'test.useTestNG()' to your build script.
-    testCompile 'junit:junit:4.12'
-    
-    integrationTestCompile(
-            //Add dependencies that are required to compile
-            //our integration tests.
+    compile(
+            'org.slf4j:slf4j-api',
+            'org.springframework:spring-aspects',
+            'org.springframework:spring-context-support',
+            'org.springframework:spring-webmvc',
     )
-    integrationTestRuntime(
-            //Add dependencies that are required to run
-            //our integration tests.
+    providedCompile(
+            'javax.servlet:javax.servlet-api'
     )
-     endToEndTestCompile(
-            //Add dependencies that are required to compile
-            //our end-to-end tests.
+    runtime(
+            'javax.servlet:jstl',
+            'log4j:log4j',
+            'org.slf4j:slf4j-log4j12',
+            'org.slf4j:jcl-over-slf4j',
     )
-    endToEndTestRuntime(
-            //Add dependencies that are required to run
-            //our end-to-end tests.
+    testCompile(
+            'javax.el:javax.el-api',
+            'org.glassfish.web:el-impl:2.2',
+            'junit:junit',
+            'de.bechte.junit:junit-hierarchicalcontextrunner:4.12.1',
+            'org.hamcrest:hamcrest-library',
+            'org.assertj:assertj-core:3.5.2',
+            'org.springframework:spring-test'
+    )
+    endToEndTestCompile(
+            'org.seleniumhq.selenium:selenium-java:3.1.0'
     )
 }
 
@@ -85,9 +96,15 @@ integrationTest {
 
 endToEndTest {
     useJUnit {
-        includeCategories 'com.testwithspring.intermediate.EndToEndTest'
+        includeCategories 'org.arunm.intermediate.EndToEndTest'
     }
     testLogging {
         showStandardStreams = true
     }
+}
+gretty {
+    httpPort = 8081
+    contextPath = '/'
+    servletContainer = 'jetty9.3'
+    integrationTestTask = 'endToEndTest'
 }
